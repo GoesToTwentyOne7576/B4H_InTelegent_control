@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from django.views.generic import RedirectView
-
+from boxapp import views
 from boxapp import views
 
 admin.site.site_header = "B4H Portal"
@@ -16,4 +16,32 @@ urlpatterns = [
     path("admin/box-log/download/", admin.site.admin_view(views.log_file_download), name="box_log_file"),
     path("admin/", admin.site.urls),
     path("", RedirectView.as_view(url="/admin/", permanent=False)),
+
+path(
+    "admin/movement-alarm/",
+    admin.site.admin_view(views.movement_alarm_page),
+    name="movement_alarm",
+),
+path(
+    "admin/movement-alarm/create/",
+    admin.site.admin_view(views.movement_alarm_create),
+    name="movement_alarm_create",
+),
+path(
+    "admin/movement-alarm/<int:rule_id>/toggle/",
+    admin.site.admin_view(views.movement_alarm_toggle),
+    name="movement_alarm_toggle",
+),
+path(
+    "admin/movement-alarm/<int:rule_id>/delete/",
+    admin.site.admin_view(views.movement_alarm_delete),
+    name="movement_alarm_delete",
+),
+path(
+    "admin/movement-alarm/event/<int:event_id>/ack/",
+    admin.site.admin_view(views.movement_alarm_ack),
+    name="movement_alarm_ack",
+),
+
+    
 ]

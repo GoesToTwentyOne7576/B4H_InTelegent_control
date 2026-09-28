@@ -1,0 +1,239 @@
+{% extends "admin/boxapp/base_box.html" %}
+{% load static %}
+
+{% block box_content %}
+
+<div class="movement-header">
+    <div>
+        <h2>Restricted Movement Alarm</h2>
+        <p class="box-muted">
+            Detect visual movement inside a configured restricted camera zone.
+        </p>
+    </div>
+</div>
+
+<div class="movement-card">
+    <h3>Create Alarm Rule</h3>
+
+    <form id="movement-rule-form">
+        {% csrf_token %}
+
+        <div class="movement-grid">
+            <label>
+                Rule name
+                <input id="rule-name" type="text" placeholder="Warehouse restricted area" required>
+            </label>
+
+            <label>
+                Camera
+                <select id="device-id" required>
+                    {% for d in devices %}
+                    <option value="{{ d.device_id }}">
+                        {{ d.device_name }} (#{{ d.device_id }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                Sensitivity
+                <input id="sensitivity" type="number" min="0.001" max="1" step="0.001" value="0.015">
+            </label>
+
+            <label>
+                Trigger frames
+                <input id="trigger-frames" type="number" min="1" max="30" value="3">
+            </label>
+
+            <label>
+                Cooldown seconds
+                <input id="cooldown" type="number" min="1" max="3600" value="30">
+            </label>
+
+            <label>
+                Alarm duration
+                <input id="duration" type="number" min="1" max="3600" value="10">
+            </label>
+        </div>
+
+        <p class="box-muted">
+            Zone points are currently entered as JSON coordinates.
+            Example:
+            <code>[[100,100],[700,100],[700,500],[100,500]]</code>
+        </p>
+
+        <label>
+            Restricted zone points
+            <textarea id="zone-points" rows="3" required>[[100,100],[700,100],[700,500],[100,500]]</textarea>
+        </label>
+
+        <button type="submit" class="movement-primary">
+            Create & Start Alarm
+        </button>
+
+        <span id="movement-form-result" class="box-muted"></span>
+    </form>
+</div>
+
+<div class="movement-card">
+    <h3>Alarm Rules</h3>
+
+    <table class="box-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Camera</th>
+                <th>Sensitivity</th>
+                <th>Status</th>
+                <th>Updated</th>
+                <th>Operation</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for rule in rules %}
+            <tr>
+                <td><strong>{{ rule.name }}</strong></td>
+                <td>#{{ rule.device_id }}</td>
+                <td>{{ rule.sensitivity }}</td>
+                <td>
+                    {% if rule.enabled %}
+                    <span class="box-badge movement-active">Enabled</span>
+                    {% else %}
+                    <span class="box-muted">Disabled</span>
+                    {% endif %}
+                </td>
+                <td>{{ rule.updated_at }}</td>
+                <td>
+                    <form method="post" action="{% url 'movement_alarm_toggle' rule.id %}" class="movement-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="action-link">
+                            {% if rule.enabled %}Disable{% else %}Enable{% endif %}
+                        </button>
+                    </form>
+
+                    <form method="post" action="{% url 'movement_alarm_delete' rule.id %}" class="movement-inline"
+                        onsubmit="return confirm('Delete this alarm rule?');">
+                        {% csrf_token %}
+                        <button type="submit" class="action-link action-delete">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="box-empty box-muted">
+                    No movement alarm rules configured.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="movement-card">
+    <h3>Recent Alarm Events</h3>
+
+    <table class="box-table">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Rule</th>
+                <th>Camera</th>
+                <th>Score</th>
+                <th>Status</th>
+                <th>Operation</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event.detected_at }}</td>
+                <td>{{ event.rule.name }}</td>
+                <td>#{{ event.device_id }}</td>
+                <td>{{ event.detection_score|floatformat:4 }}</td>
+                <td>
+                    {% if event.acknowledged %}
+                    <span class="box-muted">Acknowledged</span>
+                    {% else %}
+                    <span class="box-badge movement-alert">ALARM</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not event.acknowledged %}
+                    <form method="post" action="{% url 'movement_alarm_ack' event.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="action-link">Acknowledge</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="box-empty box-muted">
+                    No movement events yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    (function () {
+        const form = document.getElementById("movement-rule-form");
+        const result = document.getElementById("movement-form-result");
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            let points;
+            try {
+                points = JSON.parse(document.getElementById("zone-points").value);
+            } catch (e) {
+                result.textContent = "Zone points must be valid JSON.";
+                return;
+            }
+
+            const payload = {
+                name: document.getElementById("rule-name").value.trim(),
+                device_id: Number(document.getElementById("device-id").value),
+                zone_points: points,
+                sensitivity: Number(document.getElementById("sensitivity").value),
+                trigger_frames: Number(document.getElementById("trigger-frames").value),
+                cooldown_seconds: Number(document.getElementById("cooldown").value),
+                alarm_duration_seconds: Number(document.getElementById("duration").value)
+            };
+
+            const csrf = document.querySelector(
+                "[name=csrfmiddlewaretoken]"
+            ).value;
+
+            try {
+                const response = await fetch("{% url 'movement_alarm_create' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrf
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    result.textContent = data.error || "Could not create rule.";
+                    return;
+                }
+
+                window.location.reload();
+            } catch (error) {
+                result.textContent = "Request failed.";
+            }
+        });
+    })();
+</script>
+
+{% endblock %}

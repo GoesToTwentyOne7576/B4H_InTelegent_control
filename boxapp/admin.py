@@ -163,3 +163,78 @@ class AlgorithmAdmin(BoxPageAdmin):
 
     def build_context(self, request):
         return {"algorithms": services.algorithms()}
+
+
+
+from django.contrib import admin
+
+from .models import MovementAlarmEvent, MovementAlarmRule
+
+
+@admin.register(MovementAlarmRule)
+class MovementAlarmRuleAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "device_id",
+        "enabled",
+        "sensitivity",
+        "trigger_frames",
+        "cooldown_seconds",
+        "updated_at",
+    )
+    list_filter = ("enabled", "device_id")
+    search_fields = ("name",)
+
+
+# @admin.register(MovementAlarmEvent)
+# class MovementAlarmEventAdmin(admin.ModelAdmin):
+#     list_display = (
+#         "detected_at",
+#         "rule",
+#         "device_id",
+#         "detection_score",
+#         "acknowledged",
+#     )
+#     list_filter = ("acknowledged", "device_id")
+#     readonly_fields = (
+#         "rule",
+#         "device_id",
+#         "detected_at",
+#         "duration_seconds",
+#         "detection_score",
+#     )
+# @admin.register(MovementAlarmEvent)
+# class MovementAlarmEventAdmin(admin.ModelAdmin):
+#     list_display = (
+#         "id",
+#         "device",
+#         "rule",
+#         "created_at",
+#     )
+
+#     fields = (
+#         "device",
+#         "rule",
+#         "message",
+#         "created_at",
+#     )
+
+@admin.register(MovementAlarmEvent)
+class MovementAlarmEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "rule",
+        "device_id",
+        "detected_at",
+        "duration_seconds",
+        "detection_score",
+        "acknowledged",
+    )
+
+    fields = (
+        "rule",
+        "device_id",
+        "duration_seconds",
+        "detection_score",
+        "acknowledged",
+    )
