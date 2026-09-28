@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+  .box-filter { display:flex; flex-wrap:wrap; gap:12px 18px; align-items:flex-end; margin:0 0 16px; padding:12px 14px;
+                background:var(--darkened-bg, #f8f8f8); border:1px solid var(--hairline-color, #ddd); border-radius:6px; }
+  .box-filter label { display:block; font-size:12px; font-weight:600; margin-bottom:3px; }
+  .box-filter .check label { display:inline; font-weight:400; font-size:13px; }
+  .box-table { width:100%; }
+  .box-table td, .box-table th { vertical-align:middle; }
+  .box-thumb { height:56px; width:56px; object-fit:cover; border-radius:4px; border:1px solid var(--hairline-color, #ddd); background:#eee; }
+  .box-thumb.wide { width:96px; }
+  .box-chip { display:inline-block; margin:1px 3px 1px 0; padding:1px 7px; font-size:11px; border-radius:10px;
+              background:var(--darkened-bg, #eef); border:1px solid var(--hairline-color, #ddd); white-space:nowrap; }
+  .box-badge { padding:1px 8px; border-radius:10px; font-size:11px; font-weight:600; color:#fff; background:#2f7dd1; }
+  .box-badge.body { background:#8a5cd0; }
+  .box-badge.security { background:#c0392b; }
+  .box-pager { display:flex; gap:14px; align-items:center; margin:14px 0; }
+  .box-muted { color:var(--body-quiet-color, #777); }
+  .box-raw pre { max-height:260px; overflow:auto; font-size:11px; margin:4px 0 0; }
+  .box-empty { padding:24px; text-align:center; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+  <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a> &rsaquo;
+  {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+{% if error %}<p class="errornote">{{ error }}</p>{% endif %}
+{% block box_content %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% if pager %}
+<div class="box-pager">
+  <span><strong>{{ pager.total }}</strong> record{{ pager.total|pluralize }}</span>
+  {% if pager.has_prev %}<a href="?{{ pager.base_qs }}&page={{ pager.prev }}">&laquo; Previous</a>{% endif %}
+  <span>Page {{ pager.page }} of {{ pager.num_pages }}</span>
+  {% if pager.has_next %}<a href="?{{ pager.base_qs }}&page={{ pager.next }}">Next &raquo;</a>{% endif %}
+</div>
+{% endif %}

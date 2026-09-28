@@ -1,0 +1,14 @@
+{% extends "admin/boxapp/base_box.html" %}
+{% block box_content %}
+<p class="box-muted"><strong>{{ devices|length }}</strong> camera{{ devices|length|pluralize }} configured on the box</p>
+<table class="box-table">
+  <thead><tr><th>Device ID</th><th>Name</th></tr></thead>
+  <tbody>
+  {% for d in devices %}
+    <tr><td class="box-muted">{{ d.device_id }}</td><td>{{ d.device_name|default:"—" }}</td></tr>
+  {% empty %}
+    <tr><td colspan="2" class="box-empty box-muted">No devices found.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

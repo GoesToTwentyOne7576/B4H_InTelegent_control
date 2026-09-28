@@ -1,0 +1,24 @@
+{% extends "admin/boxapp/base_box.html" %}
+{% block box_content %}
+<style>
+  .live-grid { display:grid; grid-template-columns:repeat({{ cols }}, minmax(0, 1fr)); gap:14px; }
+  .live-card { border:1px solid var(--hairline-color, #ddd); border-radius:6px; overflow:hidden; background:#000; }
+  .live-card header { background:var(--darkened-bg, #f4f4f4); color:var(--body-fg); padding:6px 10px; font-weight:600; font-size:13px; }
+  .live-card img { display:block; width:100%; aspect-ratio:16/9; object-fit:contain; background:#111; }
+  .live-off { padding:40px 10px; text-align:center; color:#aaa; font-size:13px; }
+</style>
+<form method="get" class="box-filter">
+  <div><label for="cols">Columns</label>
+    <select id="cols" name="cols">{% for n in "1234" %}<option value="{{ n }}" {% if n == cols|stringformat:"s" %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+  <input type="submit" value="Apply" class="default">
+</form>
+<div class="live-grid">
+{% for c in cameras %}
+  <div class="live-card">
+    <header>{{ c.name|default:"Camera" }} <span class="box-muted">#{{ c.id }}</span></header>
+    {% if c.configured %}<img src="{% url 'live_stream' c.id %}" alt="{{ c.name }}">
+    {% else %}<div class="live-off">The box has no RTSP URL for this device</div>{% endif %}
+  </div>
+{% empty %}<p class="box-muted">No devices found on the box.</p>{% endfor %}
+</div>
+{% endblock %}

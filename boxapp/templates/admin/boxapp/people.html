@@ -1,0 +1,18 @@
+{% extends "admin/boxapp/base_box.html" %}
+{% block box_content %}
+<form method="get" class="box-filter">
+  <div><label for="q">Search name or ID</label><input id="q" type="search" name="q" value="{{ q }}"></div>
+  <input type="submit" value="Search" class="default">
+</form>
+<p class="box-muted"><strong>{{ people|length }}</strong> {{ people|length|pluralize:"person,people" }} in the face library</p>
+<table class="box-table">
+  <thead><tr><th>Name</th><th>Person ID</th></tr></thead>
+  <tbody>
+  {% for p in people %}
+    <tr><td>{{ p.name|default:"—" }}</td><td class="box-muted">{{ p.person_id }}</td></tr>
+  {% empty %}
+    <tr><td colspan="2" class="box-empty box-muted">No people found.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

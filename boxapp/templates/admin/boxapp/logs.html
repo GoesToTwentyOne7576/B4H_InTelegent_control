@@ -1,0 +1,29 @@
+{% extends "admin/boxapp/base_box.html" %}
+{% block box_content %}
+{% include "admin/boxapp/_filter_form.html" %}
+{% if perms.boxapp.view_logview %}<p><a class="button" href="{% url 'box_log_file' %}">Download full log</a></p>{% endif %}
+{% include "admin/boxapp/_pager.html" %}
+{% if pager %}
+<table class="box-table">
+  <thead><tr>
+    <th>#</th><th>Time</th><th>Category</th><th>Event</th><th>Detail</th><th>IP</th><th>User</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td class="box-muted">{{ r.seq|default:"—" }}</td>
+      <td>{{ r.time }}</td>
+      <td><span class="box-badge{% if r.is_security %} security{% endif %}">{{ r.category }}</span></td>
+      <td>{{ r.event }}</td>
+      <td>{{ r.detail }}</td>
+      <td>{{ r.ip }}</td>
+      <td>{{ r.user }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="box-empty box-muted">No log entries in this time range.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% include "admin/boxapp/_pager.html" %}
+{% endif %}
+{% endblock %}

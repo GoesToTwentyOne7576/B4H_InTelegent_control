@@ -1,0 +1,25 @@
+{% extends "admin/boxapp/base_box.html" %}
+{% block box_content %}
+<p class="box-muted"><strong>{{ algorithms|length }}</strong> algorithm package{{ algorithms|length|pluralize }} on the box</p>
+<table class="box-table">
+  <thead><tr>
+    <th>Name</th><th>Version</th><th>Type</th><th>Chip</th><th>Size</th><th>Status</th><th>In use</th><th>Description</th>
+  </tr></thead>
+  <tbody>
+  {% for a in algorithms %}
+    <tr>
+      <td><strong>{{ a.name }}</strong><br><span class="box-muted">{{ a.manufacturer }} &middot; #{{ a.id }}</span></td>
+      <td>{{ a.version }}</td>
+      <td><span class="box-chip">{{ a.type }}</span></td>
+      <td>{{ a.chip }}</td>
+      <td>{{ a.size }}</td>
+      <td>{{ a.status }} <span class="box-muted">({{ a.result }})</span></td>
+      <td>{% if a.in_use %}<span class="box-badge">Yes</span>{% else %}<span class="box-muted">No</span>{% endif %}</td>
+      <td>{{ a.description }}<br><span class="box-muted">{{ a.update_note }}</span></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="box-empty box-muted">No algorithm packages found.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

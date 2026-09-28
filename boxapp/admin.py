@@ -1,0 +1,165 @@
+"""
+One admin page per box feature. Each page is a ModelAdmin whose changelist is replaced by a view
+that reads live from the box, so login, permissions and look & feel all come from Django admin.
+"""
+import logging
+
+import httpx
+from django.contrib import admin
+from django.core.exceptions import PermissionDenied
+from django.template.response import TemplateResponse
+
+from . import services
+from .b4h import B4HError
+from .forms import CaptureFilterForm, LogFilterForm, RecognitionFilterForm
+from .models import AlgorithmPackage, CaptureRecord, Device, LiveView, LogView, Person, RecognitionRecord
+
+log = logging.getLogger("b4h")
+
+
+def _page_number(request) -> int:
+    try:
+        return max(1, int(request.GET.get("page", 1)))
+    except ValueError:
+        return 1
+
+
+def _pagination(request, total: int, page: int, size: int) -> dict:
+    num_pages = max(1, -(-total // size))
+    qs = request.GET.copy()
+    qs.pop("page", None)
+    return {
+        "page": page,
+        "num_pages": num_pages,
+        "total": total,
+        "has_prev": page > 1,
+        "has_next": page < num_pages,
+        "prev": page - 1,
+        "next": page + 1,
+        "base_qs": qs.urlencode(),
+    }
+
+
+class BoxPageAdmin(admin.ModelAdmin):
+    """Read-only page backed by the box. Subclasses implement build_context()."""
+
+    page_template = ""
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def build_context(self, request) -> dict:
+        raise NotImplementedError
+
+    def changelist_view(self, request, extra_context=None):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        ctx = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": self.model._meta.verbose_name_plural,
+        }
+        try:
+            ctx.update(self.build_context(request))
+        except B4HError as e:
+            log.warning("Box error: %s", e)
+            ctx["error"] = f"Box error on {e.path}: {e.message} (code {e.code})"
+        except httpx.TransportError as e:
+            log.warning("Box unreachable: %r", e)
+            ctx["error"] = f"B4H box unreachable ({type(e).__name__}). Check B4H_BASE_URL and the network."
+        return TemplateResponse(request, self.page_template, ctx)
+
+
+@admin.register(RecognitionRecord)
+class RecognitionAdmin(BoxPageAdmin):
+    page_template = "admin/boxapp/recognition.html"
+
+    def build_context(self, request):
+        form = RecognitionFilterForm(request.GET or RecognitionFilterForm.defaults())
+        ctx = {"form": form, "rows": []}
+        if form.is_valid():
+            cd, page = form.cleaned_data, _page_number(request)
+            rows, total = services.fetch_recognition(
+                cd["start"], cd["end"], cd["minor"], page, cd["size"], cd["hide_deleted"],
+            )
+            ctx.update(rows=rows, pager=_pagination(request, total, page, cd["size"]))
+        return ctx
+
+
+@admin.register(CaptureRecord)
+class CaptureAdmin(BoxPageAdmin):
+    page_template = "admin/boxapp/captures.html"
+
+    def build_context(self, request):
+        form = CaptureFilterForm(request.GET or CaptureFilterForm.defaults())
+        ctx = {"form": form, "rows": []}
+        if form.is_valid():
+            cd, page = form.cleaned_data, _page_number(request)
+            rows, total = services.fetch_captures(cd["start"], cd["end"], cd["target_type"], page, cd["size"])
+            ctx.update(rows=rows, pager=_pagination(request, total, page, cd["size"]))
+        return ctx
+
+
+@admin.register(Person)
+class PersonAdmin(BoxPageAdmin):
+    page_template = "admin/boxapp/people.html"
+
+    def build_context(self, request):
+        q = request.GET.get("q", "").strip()
+        people = services.people()
+        if q:
+            people = [p for p in people if q.lower() in p["name"].lower() or q in p["person_id"]]
+        return {"people": people, "q": q}
+
+
+@admin.register(Device)
+class DeviceAdmin(BoxPageAdmin):
+    page_template = "admin/boxapp/devices.html"
+
+    def build_context(self, request):
+        return {"devices": services.devices()}
+
+
+@admin.register(LiveView)
+class LiveAdmin(BoxPageAdmin):
+    page_template = "admin/boxapp/live.html"
+
+    def build_context(self, request):
+        with_stream = services.camera_ids()
+        cameras = [
+            {"id": d["device_id"], "name": d["device_name"], "configured": d["device_id"] in with_stream}
+            for d in services.devices()
+        ]
+        try:
+            cols = min(4, max(1, int(request.GET.get("cols", 2))))
+        except ValueError:
+            cols = 2
+        return {"cameras": cameras, "cols": cols}
+
+
+@admin.register(LogView)
+class LogAdmin(BoxPageAdmin):
+    page_template = "admin/boxapp/logs.html"
+
+    def build_context(self, request):
+        form = LogFilterForm(request.GET or LogFilterForm.defaults())
+        ctx = {"form": form, "rows": []}
+        if form.is_valid():
+            cd, page = form.cleaned_data, _page_number(request)
+            rows, total = services.fetch_logs(cd["start"], cd["end"], page, cd["size"])
+            ctx.update(rows=rows, pager=_pagination(request, total, page, cd["size"]))
+        return ctx
+
+
+@admin.register(AlgorithmPackage)
+class AlgorithmAdmin(BoxPageAdmin):
+    page_template = "admin/boxapp/algorithms.html"
+
+    def build_context(self, request):
+        return {"algorithms": services.algorithms()}

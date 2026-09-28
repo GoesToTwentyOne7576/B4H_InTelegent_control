@@ -1,0 +1,14 @@
+<form method="get" class="box-filter">
+  {% for field in form %}
+    <div class="{% if field.field.widget.input_type == 'checkbox' %}check{% endif %}">
+      {% if field.field.widget.input_type == 'checkbox' %}
+        {{ field }} <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {% else %}
+        {{ field.label_tag }} {{ field }}
+      {% endif %}
+      {% for e in field.errors %}<div class="errornote">{{ e }}</div>{% endfor %}
+    </div>
+  {% endfor %}
+  {% for e in form.non_field_errors %}<div class="errornote">{{ e }}</div>{% endfor %}
+  <input type="submit" value="Search" class="default">
+</form>

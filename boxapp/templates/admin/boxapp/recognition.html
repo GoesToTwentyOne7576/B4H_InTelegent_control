@@ -1,0 +1,33 @@
+{% extends "admin/boxapp/base_box.html" %}
+{% block box_content %}
+{% include "admin/boxapp/_filter_form.html" %}
+{% include "admin/boxapp/_pager.html" %}
+{% if pager %}
+<table class="box-table">
+  <thead><tr>
+    <th>Face</th><th>Panorama</th><th>Library photo</th><th>Time</th><th>Device</th>
+    <th>Name</th><th>Person ID</th><th>Groups</th><th>Similarity %</th><th>Liveness %</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{% include "admin/boxapp/_thumb.html" with src=r.face_img %}</td>
+      <td>{% include "admin/boxapp/_thumb.html" with src=r.panorama_img wide=True %}</td>
+      <td>{% include "admin/boxapp/_thumb.html" with src=r.base_img %}</td>
+      <td>{{ r.time }}</td>
+      <td>{{ r.device }}</td>
+      <td><strong>{{ r.name }}</strong></td>
+      <td class="box-muted">{{ r.person_id|default:"—" }}</td>
+      <td>{{ r.groups }}</td>
+      <td>{{ r.similarity }}</td>
+      <td>{{ r.living }}</td>
+      <td class="box-raw"><details><summary>Raw</summary><pre>{{ r.raw_json }}</pre></details></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="11" class="box-empty box-muted">No records in this time range.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% include "admin/boxapp/_pager.html" %}
+{% endif %}
+{% endblock %}
