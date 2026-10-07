@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # B4H portal: workflow and API flow
 
 Django admin portal that reads everything live from the MegCube B4H box. Arrows show who calls whom; each table lists parameters in and data out.
@@ -251,3 +252,6 @@ Notes on `alarm_history`:
 - Movement detection sees motion only. It does not identify people or vehicles.
 - The box connection uses `verify=False` (self-signed certificate). Use it only on a trusted network.
 
+=======
+##Test
+>>>>>>> Stashed changes
